@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Verificador de Certificados</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background: linear-gradient(135deg, #0f2b5b 0%, #1a4a9e 100%);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+    }
+    .logo-area { text-align: center; margin-bottom: 24px; color: white; }
+    .logo-area h1 { font-size: 1.5rem; font-weight: 700; letter-spacing: 1px; }
+    .logo-area p  { font-size: 0.9rem; opacity: 0.8; margin-top: 4px; }
+    .card {
+      background: white;
+      border-radius: 20px;
+      padding: 36px 32px;
+      width: 100%;
+      max-width: 520px;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+    }
+    .card-title { font-size: 1.15rem; font-weight: 700; color: #0f2b5b; margin-bottom: 4px; }
+    .card-sub   { font-size: 0.88rem; color: #6b7280; margin-bottom: 24px; }
+    label {
+      display: block;
+      font-size: 0.82rem;
+      font-weight: 600;
+      color: #374151;
+      margin-bottom: 6px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    input {
+      width: 100%;
+      padding: 13px 16px;
+      border: 2px solid #e5e7eb;
+      border-radius: 10px;
+      font-size: 1rem;
+      outline: none;
+      transition: border-color 0.2s;
+      color: #111827;
+      text-transform: uppercase;
+    }
+    input:focus { border-color: #1a4a9e; }
+    input::placeholder { text-transform: none; color: #9ca3af; font-size: 0.9rem; }
+    .hint { font-size: 0.78rem; color: #9ca3af; margin-top: 5px; }
+    button {
+      width: 100%;
+      margin-top: 18px;
+      padding: 14px;
+      background: linear-gradient(135deg, #1a4a9e, #0f2b5b);
+      color: white;
+      border: none;
+      border-radius: 10px;
+      font-size: 1rem;
+      font-weight: 700;
+      cursor: pointer;
+      letter-spacing: 0.5px;
+      transition: opacity 0.2s;
+    }
+    button:hover:not(:disabled) { opacity: 0.9; }
+    button:disabled { opacity: 0.5; cursor: not-allowed; }
+    .spinner {
+      display: inline-block;
+      width: 16px; height: 16px;
+      border: 2px solid rgba(255,255,255,0.4);
+      border-top-color: white;
+      border-radius: 50%;
+      animation: spin 0.7s linear infinite;
+      vertical-align: middle;
+      margin-right: 8px;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    #resultado { margin-top: 24px; display: none; }
+    .res-valido   { border: 2px solid #10b981; border-radius: 14px; overflow: hidden; margin-bottom: 12px; }
+    .res-vencido  { border: 2px solid #f59e0b; border-radius: 14px; overflow: hidden; margin-bottom: 12px; }
+    .res-invalido { border: 2px solid #ef4444; border-radius: 14px; overflow: hidden; }
+    .res-header {
+      padding: 12px 20px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-weight: 700;
+      font-size: 0.95rem;
+    }
+    .res-header-valido   { background: #10b981; color: white; }
+    .res-header-vencido  { background: #f59e0b; color: white; }
+    .res-header-invalido { background: #ef4444; color: white; }
+    .res-body { padding: 18px 20px; background: #f9fafb; }
+    .res-body-vencido { padding: 18px 20px; background: #fffbeb; }
+    .res-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    .res-item { display: flex; flex-direction: column; gap: 2px; }
+    .res-item.full { grid-column: 1 / -1; }
+    .res-key { font-size: 0.72rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; color: #6b7280; }
+    .res-val { font-size: 0.95rem; font-weight: 600; color: #111827; }
+    .estado-valido  { display:inline-block; padding:3px 12px; border-radius:999px; font-size:0.82rem; font-weight:700; background:#d1fae5; color:#065f46; }
+    .estado-vencido { display:inline-block; padding:3px 12px; border-radius:999px; font-size:0.82rem; font-weight:700; background:#fef3c7; color:#92400e; }
+    .estado-invalido{ display:inline-block; padding:3px 12px; border-radius:999px; font-size:0.82rem; font-weight:700; background:#fee2e2; color:#991b1b; }
+    .res-invalido-body { padding: 18px 20px; background: #fff5f5; color: #7f1d1d; font-size: 0.9rem; }
+    .vence-aviso { font-size: 0.8rem; color: #92400e; background: #fef3c7; padding: 8px 12px; border-radius: 8px; margin-top: 10px; }
+
+    /* Múltiples certificados */
+    .multi-header {
+      background: #1a4a9e;
+      color: white;
+      padding: 12px 20px;
+      border-radius: 12px 12px 0 0;
+      font-weight: 700;
+      font-size: 0.95rem;
+    }
+    .multi-body { background: #f0f4ff; padding: 12px; border-radius: 0 0 12px 12px; border: 2px solid #1a4a9e; border-top: none; }
+    .cert-card { background: white; border-radius: 10px; overflow: hidden; margin-bottom: 10px; }
+    .cert-card:last-child { margin-bottom: 0; }
+    .cert-card-header-valido  { background: #10b981; color: white; padding: 8px 14px; font-size: 0.82rem; font-weight: 700; display: flex; justify-content: space-between; align-items: center; }
+    .cert-card-header-vencido { background: #f59e0b; color: white; padding: 8px 14px; font-size: 0.82rem; font-weight: 700; display: flex; justify-content: space-between; align-items: center; }
+    .cert-card-body { padding: 12px 14px; }
+
+    .footer { margin-top: 20px; text-align: center; color: rgba(255,255,255,0.5); font-size: 0.78rem; }
+  </style>
+</head>
+<body>
+
+  <div class="logo-area">
+    <h1>🏅 CERTIFICADOS DIGITALES</h1>
+    <p>Sistema de Verificación de Autenticidad</p>
+  </div>
+
+  <div class="card">
+    <div class="card-title">Verificar Certificado</div>
+    <div class="card-sub">Ingresa el código del certificado o el número de DNI del participante.</div>
+    <label>Código o DNI</label>
+    <input
+      type="text"
+      id="busqueda"
+      placeholder="Ej: LCT-ALT-2026-101 o 71345955"
+      onkeydown="if(event.key==='Enter') verificar()"
+      autocomplete="off"
+      spellcheck="false"
+    />
+    <div class="hint">Puedes buscar por código de certificado o por número de DNI.</div>
+    <button id="btn" onclick="verificar()">🔍 VERIFICAR CERTIFICADO</button>
+    <div id="resultado"></div>
+  </div>
+
+  <div class="footer">Los certificados son emitidos y verificados en tiempo real.</div>
+
+<script>
+  const API = "https://script.google.com/macros/s/AKfycbzkWCXB7NBwA0cZgFevgBdMguFRMIVTtJHEtKyt4TV9G3eBJ98Uw10sTCq7WIQ33Nk/exec";
+
+  // Detectar código en URL (para QR)
+  window.onload = function() {
+    const params = new URLSearchParams(window.location.search);
+    const codigo = params.get("codigo");
+    if (codigo) {
+      document.getElementById("busqueda").value = codigo;
+      verificar();
+    }
+  };
+
+  function callAPI(valor) {
+    return new Promise((resolve, reject) => {
+      const xhr = new XMLHttpRequest();
+      xhr.open("GET", API + "?codigo=" + encodeURIComponent(valor), true);
+      xhr.onload = function() {
+        if (xhr.status === 200) {
+          try { resolve(JSON.parse(xhr.responseText)); }
+          catch(e) { reject(new Error("Respuesta inválida")); }
+        } else {
+          reject(new Error("Error HTTP: " + xhr.status));
+        }
+      };
+      xhr.onerror = () => reject(new Error("Error de red"));
+      xhr.send();
+    });
+  }
+
+  function getBadge(estado) {
+    const e = estado.toLowerCase();
+    if (e.includes("v") && !e.includes("ven")) return `<span class="estado-valido">✔ ${estado}</span>`;
+    if (e.includes("venc")) return `<span class="estado-vencido">⚠ ${estado}</span>`;
+    return `<span class="estado-invalido">✘ ${estado}</span>`;
+  }
+
+  function tarjetaMultiple(d, numero) {
+    const vencido = d.estado.toLowerCase().includes("venc");
+    const headerClass = vencido ? "cert-card-header-vencido" : "cert-card-header-valido";
+    const icono = vencido ? "⚠️" : "✅";
+    return `
+      <div class="cert-card">
+        <div class="${headerClass}">
+          <span>${icono} Certificado #${numero} — ${d.curso}</span>
+          ${getBadge(d.estado)}
+        </div>
+        <div class="cert-card-body">
+          <div class="res-grid">
+            <div class="res-item"><span class="res-key">Código</span><span class="res-val">${d.codigo}</span></div>
+            <div class="res-item"><span class="res-key">Horas</span><span class="res-val">${d.horas} horas</span></div>
+            <div class="res-item"><span class="res-key">Emisión</span><span class="res-val">${d.fecha}</span></div>
+            <div class="res-item"><span class="res-key">Vence</span><span class="res-val">${d.fechaVence}</span></div>
+          </div>
+        </div>
+      </div>`;
+  }
+
+  async function verificar() {
+    const valor     = document.getElementById("busqueda").value.trim();
+    const resultado = document.getElementById("resultado");
+    const btn       = document.getElementById("btn");
+
+    if (!valor) { document.getElementById("busqueda").focus(); return; }
+
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner"></span>Verificando...';
+    resultado.style.display = "none";
+
+    try {
+      const data = await callAPI(valor);
+
+      if (data.encontrado) {
+        const lista = Array.isArray(data.resultados) ? data.resultados : [data];
+
+        if (lista.length === 1) {
+          const d = lista[0];
+          const vencido = d.estado.toLowerCase().includes("venc");
+          const headerClass = vencido ? "res-header-vencido" : "res-header-valido";
+          const borderClass = vencido ? "res-vencido" : "res-valido";
+          const bodyClass   = vencido ? "res-body-vencido" : "res-body";
+          const icono       = vencido ? "⚠️" : "✅";
+          const titulo      = vencido ? "CERTIFICADO VENCIDO" : "CERTIFICADO VERIFICADO Y AUTÉNTICO";
+
+          resultado.innerHTML = `
+            <div class="${borderClass}">
+              <div class="res-header ${headerClass}">${icono} ${titulo}</div>
+              <div class="${bodyClass}">
+                <div class="res-grid">
+                  <div class="res-item full"><span class="res-key">Participante</span><span class="res-val">${d.participante}</span></div>
+                  <div class="res-item"><span class="res-key">DNI</span><span class="res-val">${d.dni}</span></div>
+                  <div class="res-item"><span class="res-key">Código</span><span class="res-val">${d.codigo}</span></div>
+                  <div class="res-item full"><span class="res-key">Curso</span><span class="res-val">${d.curso}</span></div>
+                  <div class="res-item"><span class="res-key">Fecha Emisión</span><span class="res-val">${d.fecha}</span></div>
+                  <div class="res-item"><span class="res-key">Fecha Vence</span><span class="res-val">${d.fechaVence}</span></div>
+                  <div class="res-item"><span class="res-key">Horas</span><span class="res-val">${d.horas} horas</span></div>
+                  <div class="res-item"><span class="res-key">Estado</span><span class="res-val">${getBadge(d.estado)}</span></div>
+                </div>
+                ${vencido ? `<div class="vence-aviso">⚠️ Este certificado venció el ${d.fechaVence}. Por favor renueva tu capacitación.</div>` : ""}
+              </div>
+            </div>`;
+
+        } else {
+          const d = lista[0];
+          let tarjetas = lista.map((c, i) => tarjetaMultiple(c, i + 1)).join("");
+          resultado.innerHTML = `
+            <div>
+              <div class="multi-header">
+                👤 ${d.participante} &nbsp;|&nbsp; DNI: ${d.dni}
+                <br><small style="font-weight:400;opacity:0.9">${lista.length} certificados encontrados</small>
+              </div>
+              <div class="multi-body">${tarjetas}</div>
+            </div>`;
+        }
+
+      } else {
+        resultado.innerHTML = `
+          <div class="res-invalido">
+            <div class="res-header res-header-invalido">❌ CERTIFICADO NO ENCONTRADO</div>
+            <div class="res-invalido-body">El código o DNI <strong>"${valor}"</strong> no está registrado en nuestra base de datos.</div>
+          </div>`;
+      }
+
+    } catch(err) {
+      resultado.innerHTML = `
+        <div class="res-invalido">
+          <div class="res-header res-header-invalido">⚠️ Error de Conexión</div>
+          <div class="res-invalido-body">No se pudo conectar al servidor. Intenta nuevamente.<br><small>${err.message}</small></div>
+        </div>`;
+    }
+
+    resultado.style.display = "block";
+    btn.disabled  = false;
+    btn.innerHTML = "🔍 VERIFICAR CERTIFICADO";
+  }
+</script>
+</body>
+</html>
